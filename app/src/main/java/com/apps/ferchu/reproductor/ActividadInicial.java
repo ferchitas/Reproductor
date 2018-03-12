@@ -16,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -73,7 +74,10 @@ public class ActividadInicial extends AppCompatActivity {
 
         listView.setAdapter(adaptador);
 
+        final TextView nombreCancion = findViewById(R.id.tsNombreCancion);
+
         final int[] cancionEnReproduccion = new int[1];
+        cancionEnReproduccion[0] = -1;
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -87,6 +91,7 @@ public class ActividadInicial extends AppCompatActivity {
                 }
                 cancionEnReproduccion[0] = i;
                 mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(i)));
+                nombreCancion.setText(canciones.get(i));
                 mediaPlayer.start();
             }
         });
@@ -104,6 +109,10 @@ public class ActividadInicial extends AppCompatActivity {
                 }
                 else {
 
+                    if (cancionEnReproduccion[0] == -1) {
+                        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(0)));
+                        nombreCancion.setText(Uri.parse(canciones.get(0)).toString());
+                    }
                     mediaPlayer.start();
                 }
             }
@@ -118,7 +127,38 @@ public class ActividadInicial extends AppCompatActivity {
 
                 if(mediaPlayer != null) {
 
-                    mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(cancionEnReproduccion[0] + 1)));
+                    mediaPlayer.pause();
+                    if(cancionEnReproduccion[0] >= rutasCanciones.size() - 1) {
+                        cancionEnReproduccion[0] = 0;
+                    }
+                    else {
+                        cancionEnReproduccion[0]++;
+                    }
+                    mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(cancionEnReproduccion[0])));
+                    nombreCancion.setText(Uri.parse(canciones.get(cancionEnReproduccion[0])).toString());
+                    mediaPlayer.start();
+                }
+            }
+        });
+
+        Button anterior = (Button) findViewById(R.id.btAnterior);
+
+        anterior.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                if(mediaPlayer != null) {
+
+                    mediaPlayer.pause();
+                    if(cancionEnReproduccion[0] - 1 < 0) {
+                        cancionEnReproduccion[0] = rutasCanciones.size() - 1;
+                    }
+                    else {
+                        cancionEnReproduccion[0]--;
+                    }
+                    mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(cancionEnReproduccion[0])));
+                    nombreCancion.setText(Uri.parse(canciones.get(cancionEnReproduccion[0])).toString());
                     mediaPlayer.start();
                 }
             }
@@ -129,7 +169,7 @@ public class ActividadInicial extends AppCompatActivity {
 
         ContentResolver contentResolver = getContentResolver();
         Uri cancionUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        Cursor cancionCursor = contentResolver.query(cancionUri, null, null, null, null);
+        Cursor cancionCursor = contentResolver.query(cancionUri, null, null, null, "RANDOM()");
 
         if(cancionCursor != null && cancionCursor.moveToFirst()) {
 
