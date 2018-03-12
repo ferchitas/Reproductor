@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -96,7 +97,7 @@ public class ActividadInicial extends AppCompatActivity {
             }
         });
 
-        Button reproducir = (Button) findViewById(R.id.btReproducir);
+        ImageButton reproducir = (ImageButton) findViewById(R.id.btReproducir);
 
         reproducir.setOnClickListener(new View.OnClickListener() {
 
@@ -118,7 +119,7 @@ public class ActividadInicial extends AppCompatActivity {
             }
         });
 
-        Button siguiente = (Button) findViewById(R.id.btSiguiente);
+        ImageButton siguiente = (ImageButton) findViewById(R.id.btSiguiente);
 
         siguiente.setOnClickListener(new View.OnClickListener() {
 
@@ -141,7 +142,7 @@ public class ActividadInicial extends AppCompatActivity {
             }
         });
 
-        Button anterior = (Button) findViewById(R.id.btAnterior);
+        ImageButton anterior = (ImageButton) findViewById(R.id.btAnterior);
 
         anterior.setOnClickListener(new View.OnClickListener() {
 
