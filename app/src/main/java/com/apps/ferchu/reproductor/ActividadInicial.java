@@ -2,6 +2,7 @@ package com.apps.ferchu.reproductor;
 
 import android.Manifest;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaPlayer;
@@ -14,29 +15,42 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class ActividadInicial extends AppCompatActivity {
 
     private static final int PETICION_DE_PERMISOS = 1;
 
-    List<String> canciones;
-    List<String> rutasCanciones;
+    private ArrayList<String> canciones;
+    private ArrayList<String> rutasCanciones;
 
-    ListView listView;
+    private ListaDeReproduccion listaDeReproduccion;
 
-    ArrayAdapter<String> adaptador;
+    private ListView listView;
+    private ArrayAdapter<String> adaptador;
+    private ImageButton reproducir;
+    private ImageButton siguiente;
+    private ImageButton anterior;
+    TextView nombreCancion;
 
     MediaPlayer mediaPlayer;
 
+    private void inicializar() {
 
+        listView = (ListView) findViewById(R.id.lvCanciones);
+        canciones = new ArrayList<>();
+        rutasCanciones = new ArrayList<>();
+        nombreCancion = findViewById(R.id.tsNombreCancion);
+        reproducir = (ImageButton) findViewById(R.id.btReproducir);
+        siguiente = (ImageButton) findViewById(R.id.btSiguiente);
+        anterior = (ImageButton) findViewById(R.id.btAnterior);
+        listaDeReproduccion = new ListaDeReproduccion(0);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,111 +73,35 @@ public class ActividadInicial extends AppCompatActivity {
         }
         else {
 
+            inicializar();
+            obtenerMusica();
+            mostrarCancionesEnLista();
+            crearMediaPlayer();
             hacerCosas();
         }
     }
 
+    private void crearMediaPlayer() {
+
+        String ruta = listaDeReproduccion.obtenerRutasDeLasCanciones().get(listaDeReproduccion.getCancionActual());
+        String tituloCancion = listaDeReproduccion.obtenerNombresDeLasCanciones().get(listaDeReproduccion.getCancionActual());
+        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
+        nombreCancion.setText(tituloCancion);
+    }
+
     public void hacerCosas(){
+        
+        listView.setOnItemClickListener(new ListaCancionesListener());
+        reproducir.setOnClickListener(new BtRepoducir());
+        siguiente.setOnClickListener(new BtSiguiente());
+        anterior.setOnClickListener( new BtAnterior());
+        mediaPlayer.setOnCompletionListener(new FinDeCancion());
+    }
 
-        listView = (ListView) findViewById(R.id.lvCanciones);
-
-        canciones = new ArrayList<>();
-        rutasCanciones = new ArrayList<>();
-
-        obtenerMusica();
-        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, canciones);
-
+    private void mostrarCancionesEnLista() {
+        
+        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaDeReproduccion.obtenerNombresYArtistasDeLasCanciones());
         listView.setAdapter(adaptador);
-
-        final TextView nombreCancion = findViewById(R.id.tsNombreCancion);
-
-        final int[] cancionEnReproduccion = new int[1];
-        cancionEnReproduccion[0] = -1;
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-                if(mediaPlayer != null) {
-
-                    mediaPlayer.release();
-                }
-                cancionEnReproduccion[0] = i;
-                mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(i)));
-                nombreCancion.setText(canciones.get(i));
-                mediaPlayer.start();
-            }
-        });
-
-        ImageButton reproducir = (ImageButton) findViewById(R.id.btReproducir);
-
-        reproducir.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                if(mediaPlayer != null && mediaPlayer.isPlaying()) {
-
-                    mediaPlayer.pause();
-                }
-                else {
-
-                    if (cancionEnReproduccion[0] == -1) {
-                        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(0)));
-                        nombreCancion.setText(Uri.parse(canciones.get(0)).toString());
-                    }
-                    mediaPlayer.start();
-                }
-            }
-        });
-
-        ImageButton siguiente = (ImageButton) findViewById(R.id.btSiguiente);
-
-        siguiente.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                if(mediaPlayer != null) {
-
-                    mediaPlayer.pause();
-                    if(cancionEnReproduccion[0] >= rutasCanciones.size() - 1) {
-                        cancionEnReproduccion[0] = 0;
-                    }
-                    else {
-                        cancionEnReproduccion[0]++;
-                    }
-                    mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(cancionEnReproduccion[0])));
-                    nombreCancion.setText(Uri.parse(canciones.get(cancionEnReproduccion[0])).toString());
-                    mediaPlayer.start();
-                }
-            }
-        });
-
-        ImageButton anterior = (ImageButton) findViewById(R.id.btAnterior);
-
-        anterior.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-
-                if(mediaPlayer != null) {
-
-                    mediaPlayer.pause();
-                    if(cancionEnReproduccion[0] - 1 < 0) {
-                        cancionEnReproduccion[0] = rutasCanciones.size() - 1;
-                    }
-                    else {
-                        cancionEnReproduccion[0]--;
-                    }
-                    mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(rutasCanciones.get(cancionEnReproduccion[0])));
-                    nombreCancion.setText(Uri.parse(canciones.get(cancionEnReproduccion[0])).toString());
-                    mediaPlayer.start();
-                }
-            }
-        });
     }
 
     public void obtenerMusica(){
@@ -177,11 +115,16 @@ public class ActividadInicial extends AppCompatActivity {
             int cancionTitulo = cancionCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
             int cancionArtista = cancionCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
             int cancionRuta = cancionCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+            int cancionDuracion = cancionCursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
 
             do {
                 String tituloActual = cancionCursor.getString(cancionTitulo);
                 String artistaActual = cancionCursor.getString(cancionArtista);
                 String rutaActual = cancionCursor.getString(cancionRuta);
+                String duracionActual = cancionCursor.getString(cancionDuracion);
+
+                Cancion cancion = new Cancion(tituloActual, artistaActual, duracionActual, rutaActual);
+                listaDeReproduccion.getCanciones().add(cancion);
 
                 canciones.add(tituloActual + "\n" + artistaActual);
                 rutasCanciones.add(rutaActual);
@@ -210,6 +153,108 @@ public class ActividadInicial extends AppCompatActivity {
                     return;
                 }
             }
+        }
+    }
+
+    private void checkInicioArray() {
+        if(listaDeReproduccion.getCancionActual() >= listaDeReproduccion.getCanciones().size() - 1) {
+            listaDeReproduccion.setCancionActual(0);
+        }
+        else {
+            listaDeReproduccion.setCancionActual(listaDeReproduccion.getCancionActual() + 1);
+        }
+    }
+
+    private void pasarDeCancion(MediaPlayer mediaPlayer) {
+        String ruta = listaDeReproduccion.obtenerRutasDeLasCanciones().get(listaDeReproduccion.getCancionActual());
+        String tituloCancion = listaDeReproduccion.obtenerNombresYArtistasDeLasCanciones().get(listaDeReproduccion.getCancionActual());
+        mediaPlayer.pause();
+        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
+        nombreCancion.setText(tituloCancion);
+        mediaPlayer.start();
+    }
+
+    class FinDeCancion implements MediaPlayer.OnCompletionListener {
+
+
+        @Override
+        public void onCompletion(MediaPlayer mediaPlayer) {
+
+            if(mediaPlayer != null) {
+
+                checkInicioArray();
+                pasarDeCancion(mediaPlayer);
+            }
+        }
+    }
+
+    class BtAnterior extends ImagenBoton {
+
+        @Override
+        public void onClick(View v) {
+
+            if(mediaPlayer != null) {
+
+                checkFinalArray();
+                pasarDeCancion(mediaPlayer);
+            }
+        }
+
+        private void checkFinalArray() {
+            if(listaDeReproduccion.getCancionActual() - 1 < 0) {
+                listaDeReproduccion.setCancionActual(listaDeReproduccion.getCanciones().size() - 1);
+            }
+            else {
+                listaDeReproduccion.setCancionActual(listaDeReproduccion.getCancionActual() - 1);
+            }
+        }
+    }
+
+    class BtSiguiente extends ImagenBoton {
+
+        @Override
+        public void onClick(View view) {
+
+            if(mediaPlayer != null) {
+
+                checkInicioArray();
+                pasarDeCancion(mediaPlayer);
+            }
+        }
+    }
+
+    class BtRepoducir extends ImagenBoton {
+
+        @Override
+        public void onClick(View view) {
+
+            if(mediaPlayer != null && mediaPlayer.isPlaying()) {
+
+                mediaPlayer.pause();
+            }
+            else {
+
+                mediaPlayer.start();
+            }
+        }
+    }
+
+    class ListaCancionesListener implements AdapterView.OnItemClickListener {
+
+        @Override
+        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+            String cancion = (String) listaDeReproduccion.obtenerNombresYArtistasDeLasCanciones().get(i);
+            String ruta = (String) listaDeReproduccion.obtenerRutasDeLasCanciones().get(i);
+
+            if (mediaPlayer != null) {
+
+                mediaPlayer.release();
+            }
+            listaDeReproduccion.setCancionActual(i);
+            mediaPlayer = MediaPlayer.create(ActividadInicial.this, Uri.parse(ruta));
+            nombreCancion.setText(cancion);
+            mediaPlayer.start();
         }
     }
 }
