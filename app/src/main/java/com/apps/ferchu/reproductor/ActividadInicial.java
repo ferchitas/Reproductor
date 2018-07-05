@@ -2,7 +2,6 @@ package com.apps.ferchu.reproductor;
 
 import android.Manifest;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaPlayer;
@@ -20,6 +19,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ActividadInicial extends AppCompatActivity {
@@ -29,7 +29,7 @@ public class ActividadInicial extends AppCompatActivity {
     private ArrayList<String> canciones;
     private ArrayList<String> rutasCanciones;
 
-    private ListaDeReproduccion listaDeReproduccion;
+    private Playlist playlist;
 
     private ListView listView;
     private ArrayAdapter<String> adaptador;
@@ -49,7 +49,7 @@ public class ActividadInicial extends AppCompatActivity {
         reproducir = (ImageButton) findViewById(R.id.btReproducir);
         siguiente = (ImageButton) findViewById(R.id.btSiguiente);
         anterior = (ImageButton) findViewById(R.id.btAnterior);
-        listaDeReproduccion = new ListaDeReproduccion(0);
+        playlist = new Playlist(0);
     }
 
     @Override
@@ -83,14 +83,14 @@ public class ActividadInicial extends AppCompatActivity {
 
     private void crearMediaPlayer() {
 
-        String ruta = listaDeReproduccion.obtenerRutasDeLasCanciones().get(listaDeReproduccion.getCancionActual());
-        String tituloCancion = listaDeReproduccion.obtenerNombresDeLasCanciones().get(listaDeReproduccion.getCancionActual());
+        String ruta = playlist.obtenerRutasDeLasCanciones().get(playlist.getCancionActual());
+        String tituloCancion = playlist.obtenerNombresDeLasCanciones().get(playlist.getCancionActual());
         mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
         nombreCancion.setText(tituloCancion);
     }
 
     public void hacerCosas(){
-        
+
         listView.setOnItemClickListener(new ListaCancionesListener());
         reproducir.setOnClickListener(new BtRepoducir());
         siguiente.setOnClickListener(new BtSiguiente());
@@ -100,7 +100,7 @@ public class ActividadInicial extends AppCompatActivity {
 
     private void mostrarCancionesEnLista() {
         
-        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaDeReproduccion.obtenerNombresYArtistasDeLasCanciones());
+        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playlist.obtenerNombresYArtistasDeLasCanciones());
         listView.setAdapter(adaptador);
     }
 
@@ -124,7 +124,7 @@ public class ActividadInicial extends AppCompatActivity {
                 String duracionActual = cancionCursor.getString(cancionDuracion);
 
                 Cancion cancion = new Cancion(tituloActual, artistaActual, duracionActual, rutaActual);
-                listaDeReproduccion.getCanciones().add(cancion);
+                playlist.getCanciones().add(cancion);
 
                 canciones.add(tituloActual + "\n" + artistaActual);
                 rutasCanciones.add(rutaActual);
@@ -157,19 +157,27 @@ public class ActividadInicial extends AppCompatActivity {
     }
 
     private void checkInicioArray() {
-        if(listaDeReproduccion.getCancionActual() >= listaDeReproduccion.getCanciones().size() - 1) {
-            listaDeReproduccion.setCancionActual(0);
+
+        if(playlist.getCancionActual() >= playlist.getCanciones().size() - 1) {
+            playlist.setCancionActual(0);
         }
         else {
-            listaDeReproduccion.setCancionActual(listaDeReproduccion.getCancionActual() + 1);
+            playlist.setCancionActual(playlist.getCancionActual() + 1);
         }
     }
 
     private void pasarDeCancion(MediaPlayer mediaPlayer) {
-        String ruta = listaDeReproduccion.obtenerRutasDeLasCanciones().get(listaDeReproduccion.getCancionActual());
-        String tituloCancion = listaDeReproduccion.obtenerNombresYArtistasDeLasCanciones().get(listaDeReproduccion.getCancionActual());
-        mediaPlayer.pause();
-        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
+        String ruta = playlist.obtenerRutasDeLasCanciones().get(playlist.getCancionActual());
+        String tituloCancion = playlist.obtenerNombresYArtistasDeLasCanciones().get(playlist.getCancionActual());
+        mediaPlayer.reset();
+        try {
+            mediaPlayer.setDataSource(ruta);
+            mediaPlayer.prepare();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
         nombreCancion.setText(tituloCancion);
         mediaPlayer.start();
     }
@@ -201,11 +209,11 @@ public class ActividadInicial extends AppCompatActivity {
         }
 
         private void checkFinalArray() {
-            if(listaDeReproduccion.getCancionActual() - 1 < 0) {
-                listaDeReproduccion.setCancionActual(listaDeReproduccion.getCanciones().size() - 1);
+            if(playlist.getCancionActual() - 1 < 0) {
+                playlist.setCancionActual(playlist.getCanciones().size() - 1);
             }
             else {
-                listaDeReproduccion.setCancionActual(listaDeReproduccion.getCancionActual() - 1);
+                playlist.setCancionActual(playlist.getCancionActual() - 1);
             }
         }
     }
@@ -244,14 +252,14 @@ public class ActividadInicial extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 
-            String cancion = (String) listaDeReproduccion.obtenerNombresYArtistasDeLasCanciones().get(i);
-            String ruta = (String) listaDeReproduccion.obtenerRutasDeLasCanciones().get(i);
+            String cancion = (String) playlist.obtenerNombresYArtistasDeLasCanciones().get(i);
+            String ruta = (String) playlist.obtenerRutasDeLasCanciones().get(i);
 
             if (mediaPlayer != null) {
 
                 mediaPlayer.release();
             }
-            listaDeReproduccion.setCancionActual(i);
+            playlist.setCancionActual(i);
             mediaPlayer = MediaPlayer.create(ActividadInicial.this, Uri.parse(ruta));
             nombreCancion.setText(cancion);
             mediaPlayer.start();

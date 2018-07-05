@@ -6,12 +6,12 @@ import java.util.ArrayList;
  * Created by ferch on 12/03/2018.
  */
 
-public class ListaDeReproduccion {
+public class Playlist {
 
     private ArrayList canciones;
     private int cancionActual;
 
-    public ListaDeReproduccion(int cancionActual) {
+    public Playlist(int cancionActual) {
 
         this.setCancionActual(cancionActual);
         this.setCanciones(new ArrayList<Cancion>());
