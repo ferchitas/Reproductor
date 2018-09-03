@@ -1,11 +1,16 @@
 package com.apps.ferchu.reproductor;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.IBinder;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -40,6 +45,40 @@ public class ActividadInicial extends AppCompatActivity {
 
     MediaPlayer mediaPlayer;
 
+    private PlayService playService;
+    boolean serviceBound = false;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            PlayService.LocalBinder binder = (PlayService.LocalBinder) service;
+            playService = binder.getService();
+            serviceBound = true;
+
+            Toast.makeText(ActividadInicial.this, "servicio enlazado", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
+
+    private void playAudio(String media) {
+        //Check is service is active
+        if (!serviceBound) {
+            Intent playerIntent = new Intent(this, PlayService.class);
+            playerIntent.putExtra("media", media);
+            startService(playerIntent);
+            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        } else {
+
+            Toast.makeText(ActividadInicial.this, "El no esta disponible", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
     private void inicializar() {
 
         listView = (ListView) findViewById(R.id.lvCanciones);
@@ -60,16 +99,8 @@ public class ActividadInicial extends AppCompatActivity {
         if(ContextCompat.checkSelfPermission(ActividadInicial.this,
                 Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
 
-            if(ActivityCompat.shouldShowRequestPermissionRationale(ActividadInicial.this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE)){
-                ActivityCompat.requestPermissions(ActividadInicial.this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PETICION_DE_PERMISOS);
-            }
-            else {
-
-                ActivityCompat.requestPermissions(ActividadInicial.this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PETICION_DE_PERMISOS);
-            }
+            ActivityCompat.requestPermissions(ActividadInicial.this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PETICION_DE_PERMISOS);
         }
         else {
 
@@ -265,4 +296,27 @@ public class ActividadInicial extends AppCompatActivity {
             mediaPlayer.start();
         }
     }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean("ServiceState", serviceBound);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        serviceBound = savedInstanceState.getBoolean("ServiceState");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (serviceBound) {
+            unbindService(serviceConnection);
+            //service is active
+            playService.stopSelf();
+        }
+    }
+
 }

@@ -1,0 +1,6 @@
+projectKey=mi:reproductor
+serverUrl=http://localhost:8000
+serverVersion=7.1.0.11001
+dashboardUrl=http://localhost:8000/dashboard/index/mi:reproductor
+ceTaskId=AWRrXB1ghfv2h0YUEigC
+ceTaskUrl=http://localhost:8000/api/ce/task?id=AWRrXB1ghfv2h0YUEigC
