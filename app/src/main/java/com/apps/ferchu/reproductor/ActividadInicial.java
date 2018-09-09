@@ -2,30 +2,26 @@ package com.apps.ferchu.reproductor;
 
 import android.Manifest;
 import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.IBinder;
-import android.provider.MediaStore;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-
-public class ActividadInicial extends AppCompatActivity {
+public class ActividadInicial extends AppCompatActivity implements
+        PlayListsFragment.OnFragmentInteractionListener,
+        ReproductorFragment.OnFragmentInteractionListener{
 
     private static final int PETICION_DE_PERMISOS = 1;
 
@@ -60,6 +56,36 @@ public class ActividadInicial extends AppCompatActivity {
         }
     };
 
+    private void setUpMenu(){
+
+        TabLayout tabLayout = (TabLayout)findViewById(R.id.tablayout);
+        tabLayout.addTab(tabLayout.newTab().setText("Playlists"));
+        tabLayout.addTab(tabLayout.newTab().setText("Reproductor"));
+        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+
+        final ViewPager viewPager = (ViewPager)findViewById(R.id.pager);
+        final adaptadorPagina adapter = new adaptadorPagina(getSupportFragmentManager(),tabLayout.getTabCount(), ActividadInicial.this);
+        viewPager.setAdapter(adapter);
+        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                viewPager.setCurrentItem(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,73 +100,10 @@ public class ActividadInicial extends AppCompatActivity {
         else {
 
             //se queda aqui
-            inicializarIU();
+            setUpMenu();
             //se mueve al servicio
-            obtenerMusica();
-            mostrarCancionesEnLista();
-            crearMediaPlayer();
-            hacerCosas();
+
         }
-    }
-
-    private void inicializarIU() {
-
-        listView = (ListView) findViewById(R.id.lvCanciones);
-        nombreCancion = findViewById(R.id.tsNombreCancion);
-        reproducir = (ImageButton) findViewById(R.id.btReproducir);
-        siguiente = (ImageButton) findViewById(R.id.btSiguiente);
-        anterior = (ImageButton) findViewById(R.id.btAnterior);
-        //Se mueve al servicio
-        playlist = new Playlist(0);
-    }
-
-    public void obtenerMusica(){
-
-        ContentResolver contentResolver = getContentResolver();
-        Uri cancionUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        Cursor cancionCursor = contentResolver.query(cancionUri, null, null, null, "RANDOM()");
-
-        if(cancionCursor != null && cancionCursor.moveToFirst()) {
-
-            int cancionTitulo = cancionCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-            int cancionArtista = cancionCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-            int cancionRuta = cancionCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-            int cancionDuracion = cancionCursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
-
-            do {
-                String tituloActual = cancionCursor.getString(cancionTitulo);
-                String artistaActual = cancionCursor.getString(cancionArtista);
-                String rutaActual = cancionCursor.getString(cancionRuta);
-                String duracionActual = cancionCursor.getString(cancionDuracion);
-
-                Cancion cancion = new Cancion(tituloActual, artistaActual, duracionActual, rutaActual);
-                playlist.getCanciones().add(cancion);
-
-            } while (cancionCursor.moveToNext());
-        }
-    }
-
-    private void crearMediaPlayer() {
-
-        String ruta = playlist.obtenerRutasDeLasCanciones().get(playlist.getCancionActual());
-        String tituloCancion = playlist.obtenerNombresDeLasCanciones().get(playlist.getCancionActual());
-        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
-        nombreCancion.setText(tituloCancion);
-    }
-
-    public void hacerCosas(){
-
-        listView.setOnItemClickListener(new ListaCancionesListener());
-        reproducir.setOnClickListener(new BtRepoducir());
-        siguiente.setOnClickListener(new BtSiguiente());
-        anterior.setOnClickListener( new BtAnterior());
-        mediaPlayer.setOnCompletionListener(new FinDeCancion());
-    }
-
-    private void mostrarCancionesEnLista() {
-        
-        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playlist.obtenerNombresYArtistasDeLasCanciones());
-        listView.setAdapter(adaptador);
     }
 
     @Override
@@ -155,7 +118,7 @@ public class ActividadInicial extends AppCompatActivity {
                             Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
 
                         Toast.makeText(this, "Permiso obtenido", Toast.LENGTH_SHORT).show();
-                        hacerCosas();
+                        //hacerCosas();
                     }
                     else {
                         Toast.makeText(this, "Permiso no obtenido", Toast.LENGTH_SHORT).show();
@@ -164,128 +127,6 @@ public class ActividadInicial extends AppCompatActivity {
                     return;
                 }
             }
-        }
-    }
-
-    private void checkInicioArray() {
-
-        if(playlist.getCancionActual() >= playlist.getCanciones().size() - 1) {
-            playlist.setCancionActual(0);
-        }
-        else {
-            playlist.setCancionActual(playlist.getCancionActual() + 1);
-        }
-    }
-
-    private void pasarDeCancion(MediaPlayer mediaPlayer) {
-        String ruta = playlist.obtenerRutasDeLasCanciones().get(playlist.getCancionActual());
-        String tituloCancion = playlist.obtenerNombresYArtistasDeLasCanciones().get(playlist.getCancionActual());
-        mediaPlayer.reset();
-        try {
-            mediaPlayer.setDataSource(ruta);
-            mediaPlayer.prepare();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        nombreCancion.setText(tituloCancion);
-        mediaPlayer.start();
-    }
-
-    class FinDeCancion implements MediaPlayer.OnCompletionListener {
-
-
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer) {
-
-            if(mediaPlayer != null) {
-
-                checkInicioArray();
-                pasarDeCancion(mediaPlayer);
-            }
-        }
-    }
-
-    class BtAnterior extends ImagenBoton {
-
-        @Override
-        public void onClick(View v) {
-
-            if(mediaPlayer != null) {
-
-                checkFinalArray();
-                pasarDeCancion(mediaPlayer);
-            }
-        }
-
-        private void checkFinalArray() {
-            if(playlist.getCancionActual() - 1 < 0) {
-                playlist.setCancionActual(playlist.getCanciones().size() - 1);
-            }
-            else {
-                playlist.setCancionActual(playlist.getCancionActual() - 1);
-            }
-        }
-    }
-
-    class BtSiguiente extends ImagenBoton {
-
-        @Override
-        public void onClick(View view) {
-
-            if(mediaPlayer != null) {
-
-                checkInicioArray();
-                pasarDeCancion(mediaPlayer);
-            }
-        }
-    }
-
-    class BtRepoducir extends ImagenBoton {
-
-        @Override
-        public void onClick(View view) {
-
-            if(mediaPlayer != null && mediaPlayer.isPlaying()) {
-
-                mediaPlayer.pause();
-            }
-            else {
-
-                mediaPlayer.start();
-            }
-        }
-    }
-
-    private void playAudio(String media) {
-        //Check is service is active
-        if (!serviceBound) {
-            Intent playerIntent = new Intent(this, PlayService.class);
-            playerIntent.putExtra("media", media);
-            playService.
-                    startService(playerIntent);
-        } else {
-
-            Toast.makeText(ActividadInicial.this, "El servicio no esta disponible", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    class ListaCancionesListener implements AdapterView.OnItemClickListener {
-
-        @Override
-        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-            String cancion = (String) playlist.obtenerNombresYArtistasDeLasCanciones().get(i);
-            String ruta = (String) playlist.obtenerRutasDeLasCanciones().get(i);
-
-            if (mediaPlayer != null) {
-
-                mediaPlayer.release();
-            }
-            playlist.setCancionActual(i);
-            mediaPlayer = MediaPlayer.create(ActividadInicial.this, Uri.parse(ruta));
-            nombreCancion.setText(cancion);
-            mediaPlayer.start();
         }
     }
 
@@ -311,4 +152,8 @@ public class ActividadInicial extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+    }
 }
