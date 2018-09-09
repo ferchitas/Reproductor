@@ -3,7 +3,6 @@ package com.apps.ferchu.reproductor;
 import android.Manifest;
 import android.content.ComponentName;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -25,14 +24,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class ActividadInicial extends AppCompatActivity {
 
     private static final int PETICION_DE_PERMISOS = 1;
-
-    private ArrayList<String> canciones;
-    private ArrayList<String> rutasCanciones;
 
     private Playlist playlist;
 
@@ -56,7 +51,7 @@ public class ActividadInicial extends AppCompatActivity {
             playService = binder.getService();
             serviceBound = true;
 
-            Toast.makeText(ActividadInicial.this, "servicio enlazado", Toast.LENGTH_SHORT).show();
+            Toast.makeText(ActividadInicial.this, "Servicio enlazado", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -64,32 +59,6 @@ public class ActividadInicial extends AppCompatActivity {
             serviceBound = false;
         }
     };
-
-    private void playAudio(String media) {
-        //Check is service is active
-        if (!serviceBound) {
-            Intent playerIntent = new Intent(this, PlayService.class);
-            playerIntent.putExtra("media", media);
-            startService(playerIntent);
-            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-        } else {
-
-            Toast.makeText(ActividadInicial.this, "El no esta disponible", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
-    private void inicializar() {
-
-        listView = (ListView) findViewById(R.id.lvCanciones);
-        canciones = new ArrayList<>();
-        rutasCanciones = new ArrayList<>();
-        nombreCancion = findViewById(R.id.tsNombreCancion);
-        reproducir = (ImageButton) findViewById(R.id.btReproducir);
-        siguiente = (ImageButton) findViewById(R.id.btSiguiente);
-        anterior = (ImageButton) findViewById(R.id.btAnterior);
-        playlist = new Playlist(0);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,7 +73,9 @@ public class ActividadInicial extends AppCompatActivity {
         }
         else {
 
-            inicializar();
+            //se queda aqui
+            inicializarIU();
+            //se mueve al servicio
             obtenerMusica();
             mostrarCancionesEnLista();
             crearMediaPlayer();
@@ -112,27 +83,15 @@ public class ActividadInicial extends AppCompatActivity {
         }
     }
 
-    private void crearMediaPlayer() {
+    private void inicializarIU() {
 
-        String ruta = playlist.obtenerRutasDeLasCanciones().get(playlist.getCancionActual());
-        String tituloCancion = playlist.obtenerNombresDeLasCanciones().get(playlist.getCancionActual());
-        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
-        nombreCancion.setText(tituloCancion);
-    }
-
-    public void hacerCosas(){
-
-        listView.setOnItemClickListener(new ListaCancionesListener());
-        reproducir.setOnClickListener(new BtRepoducir());
-        siguiente.setOnClickListener(new BtSiguiente());
-        anterior.setOnClickListener( new BtAnterior());
-        mediaPlayer.setOnCompletionListener(new FinDeCancion());
-    }
-
-    private void mostrarCancionesEnLista() {
-        
-        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playlist.obtenerNombresYArtistasDeLasCanciones());
-        listView.setAdapter(adaptador);
+        listView = (ListView) findViewById(R.id.lvCanciones);
+        nombreCancion = findViewById(R.id.tsNombreCancion);
+        reproducir = (ImageButton) findViewById(R.id.btReproducir);
+        siguiente = (ImageButton) findViewById(R.id.btSiguiente);
+        anterior = (ImageButton) findViewById(R.id.btAnterior);
+        //Se mueve al servicio
+        playlist = new Playlist(0);
     }
 
     public void obtenerMusica(){
@@ -157,10 +116,31 @@ public class ActividadInicial extends AppCompatActivity {
                 Cancion cancion = new Cancion(tituloActual, artistaActual, duracionActual, rutaActual);
                 playlist.getCanciones().add(cancion);
 
-                canciones.add(tituloActual + "\n" + artistaActual);
-                rutasCanciones.add(rutaActual);
             } while (cancionCursor.moveToNext());
         }
+    }
+
+    private void crearMediaPlayer() {
+
+        String ruta = playlist.obtenerRutasDeLasCanciones().get(playlist.getCancionActual());
+        String tituloCancion = playlist.obtenerNombresDeLasCanciones().get(playlist.getCancionActual());
+        mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
+        nombreCancion.setText(tituloCancion);
+    }
+
+    public void hacerCosas(){
+
+        listView.setOnItemClickListener(new ListaCancionesListener());
+        reproducir.setOnClickListener(new BtRepoducir());
+        siguiente.setOnClickListener(new BtSiguiente());
+        anterior.setOnClickListener( new BtAnterior());
+        mediaPlayer.setOnCompletionListener(new FinDeCancion());
+    }
+
+    private void mostrarCancionesEnLista() {
+        
+        adaptador = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playlist.obtenerNombresYArtistasDeLasCanciones());
+        listView.setAdapter(adaptador);
     }
 
     @Override
@@ -208,7 +188,6 @@ public class ActividadInicial extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //mediaPlayer = MediaPlayer.create(ActividadInicial.this,  Uri.parse(ruta));
         nombreCancion.setText(tituloCancion);
         mediaPlayer.start();
     }
@@ -275,6 +254,19 @@ public class ActividadInicial extends AppCompatActivity {
 
                 mediaPlayer.start();
             }
+        }
+    }
+
+    private void playAudio(String media) {
+        //Check is service is active
+        if (!serviceBound) {
+            Intent playerIntent = new Intent(this, PlayService.class);
+            playerIntent.putExtra("media", media);
+            playService.
+                    startService(playerIntent);
+        } else {
+
+            Toast.makeText(ActividadInicial.this, "El servicio no esta disponible", Toast.LENGTH_SHORT).show();
         }
     }
 
