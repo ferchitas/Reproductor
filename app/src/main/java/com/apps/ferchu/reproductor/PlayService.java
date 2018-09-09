@@ -8,6 +8,9 @@ import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
+
+import java.io.IOException;
 
 public class PlayService extends Service implements
         MediaPlayer.OnCompletionListener,
@@ -28,8 +31,8 @@ public class PlayService extends Service implements
     public PlayService() {
     }
 
-    @Override
-    public void onCreate() {
+    private void initMediaPlayer(){
+
         mediaPlayer = new MediaPlayer();
         //Set up MediaPlayer event listeners
         mediaPlayer.setOnCompletionListener(this);
@@ -42,6 +45,16 @@ public class PlayService extends Service implements
         mediaPlayer.reset();
 
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        try {
+            // Set the data source to the mediaFile location
+            mediaPlayer.setDataSource(ruta);
+        } catch (IOException e) {
+            e.printStackTrace();
+            stopSelf();
+        }
+
+        mediaPlayer.prepareAsync();
     }
 
     @Override
@@ -66,9 +79,24 @@ public class PlayService extends Service implements
         }
 
         if (ruta != null && ruta != "")
-            onCreate();
+            initMediaPlayer();
 
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            stopMedia();
+            mediaPlayer.release();
+        }
+        removeAudioFocus();
+    }
+
+    private boolean removeAudioFocus() {
+        return AudioManager.AUDIOFOCUS_REQUEST_GRANTED ==
+                audioManager.abandonAudioFocus(this);
     }
 
     @Override
@@ -78,7 +106,7 @@ public class PlayService extends Service implements
         switch (focusState) {
             case AudioManager.AUDIOFOCUS_GAIN:
                 // resume playback
-                if (mediaPlayer == null) onCreate();
+                if (mediaPlayer == null) initMediaPlayer();
                 else if (!mediaPlayer.isPlaying()) mediaPlayer.start();
                 mediaPlayer.setVolume(1.0f, 1.0f);
                 break;
@@ -102,17 +130,6 @@ public class PlayService extends Service implements
         }
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (mediaPlayer != null) {
-            stopMedia();
-            mediaPlayer.release();
-        }
-        removeAudioFocus();
-    }
-
-
     private boolean requestAudioFocus() {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
@@ -122,11 +139,6 @@ public class PlayService extends Service implements
         }
         //Could not gain focus
         return false;
-    }
-
-    private boolean removeAudioFocus() {
-        return AudioManager.AUDIOFOCUS_REQUEST_GRANTED ==
-                audioManager.abandonAudioFocus(this);
     }
 
     @Override
