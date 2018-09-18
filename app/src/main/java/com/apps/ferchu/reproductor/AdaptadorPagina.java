@@ -10,12 +10,12 @@ import com.apps.ferchu.reproductor.ReproductorFragment;
 
 import java.nio.channels.ClosedByInterruptException;
 
-public class adaptadorPagina extends FragmentStatePagerAdapter {
+public class AdaptadorPagina extends FragmentStatePagerAdapter {
 
     int mNoOfTabs;
     Context context;
 
-    public adaptadorPagina(FragmentManager fm, int numberOfTabs, Context context){
+    public AdaptadorPagina(FragmentManager fm, int numberOfTabs, Context context){
 
         super(fm);
         this.mNoOfTabs = numberOfTabs;

@@ -8,12 +8,12 @@ import java.util.ArrayList;
 
 public class Playlist {
 
-    private ArrayList canciones;
+    private ArrayList<Cancion> canciones;
     private int cancionActual;
 
     public Playlist(int cancionActual) {
 
-        this.setCancionActual(cancionActual);
+        this.setIndiceCancionActual(cancionActual);
         this.setCanciones(new ArrayList<Cancion>());
     }
 
@@ -57,6 +57,8 @@ public class Playlist {
         return rutas;
     }
 
+    public Cancion obtenerCancionActual(){ return (Cancion) canciones.get(cancionActual);}
+
     public ArrayList getCanciones() {
         return canciones;
     }
@@ -65,11 +67,11 @@ public class Playlist {
         this.canciones = canciones;
     }
 
-    public int getCancionActual() {
+    public int getIndiceCancionActual() {
         return cancionActual;
     }
 
-    public void setCancionActual(int cancionActual) {
+    public void setIndiceCancionActual(int cancionActual) {
         this.cancionActual = cancionActual;
     }
 }

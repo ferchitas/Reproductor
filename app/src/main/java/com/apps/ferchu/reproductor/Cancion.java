@@ -10,13 +10,15 @@ public class Cancion {
     private String artista;
     private String duracion;
     private String ruta;
+    private String album;
 
-    public Cancion(String nombre, String artista, String duracion, String ruta) {
+    public Cancion(String nombre, String artista, String duracion, String ruta, String album) {
 
         this.nombre = nombre;
         this.artista = artista;
         this.duracion = duracion;
         this.ruta = ruta;
+        this.album = album;
     }
 
     public String getNombre() {
@@ -49,5 +51,13 @@ public class Cancion {
 
     public void setRuta(String ruta) {
         this.ruta = ruta;
+    }
+
+    public String getAlbum() {
+        return album;
+    }
+
+    public void setAlbum(String album) {
+        this.album = album;
     }
 }
